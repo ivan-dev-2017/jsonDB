@@ -1,0 +1,384 @@
+<!doctype html>
+<html>
+  <head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+	<!-- CSS only -->
+	<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z" crossorigin="anonymous">
+
+	<!-- JS, Popper.js, and jQuery -->
+	<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
+	<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js" integrity="sha384-9/reFTGAW83EW2RDu2S0VKaIzap3H66lZH81PoYlFhbGU+6BZp6G7niu735Sk7lN" crossorigin="anonymous"></script>
+	<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js" integrity="sha384-B4gt1jrGC7Jh4AgTPSdUtOBvfO8shuf57BaghqFfPlYxofvL8/KUEfYiJOMMV+rV" crossorigin="anonymous"></script>
+
+	<script>
+	$( document ).ready(function() {
+		console.log( "ready!" );	
+
+		var videosCargados = [];
+		function handleFileSelect(evt) {
+			var files = evt.target.files;
+			var output = [];
+			var reader = new FileReader();
+			
+			for (var i = 0, f; f = files[i]; i++) {
+			  output.push('<li><strong>', escape(f.name), '</strong> (', f.type || 'n/a', ') - ',f.size, ' bytes, last modified: ',f.lastModifiedDate.toLocaleDateString(), '</li>');
+			}
+			
+			document.getElementById('list').innerHTML = '<ul>' + output.join('') + '</ul>';
+						
+			reader.onload = function() {
+				var text = reader.result;	
+				videosCargados = JSON.parse(reader.result);
+				console.log(reader.result);
+			};
+			
+			reader.readAsText(files[0]);
+			
+			
+		}
+
+		document.getElementById('files').addEventListener('change', handleFileSelect, false);		
+		
+		$( "#btn_importar" ).on( "click", function() {
+		
+			console.log(videosCargados);
+			
+			
+		});		
+
+		$( "#btn_listar" ).on( "click", function() {
+			$( "#list_items" ).empty();		
+			
+			videosCargados.forEach(video => listarVideos(video));
+			
+		});			
+		
+		function listarVideos(videoActual){
+			console.log(videoActual.id_video, videoActual.titulo, videoActual.actores, videoActual.año);
+			$( "#list_items" ).append( "<li class='lista'>"+videoActual.titulo+" : "+videoActual.año+" : "+videoActual.actores+" + "+videoActual.id_video+"<button id="+videoActual.id_video+" class='botonBorrar'>Borrar</button><button id=E"+videoActual.id_video+" class='botonBorrar'>Editar</button></li>" );
+			$( "#"+videoActual.id_video+"" ).on( "click", borrarItem);
+			$( "#E"+videoActual.id_video+"" ).on( "click", editarItem);
+		}		
+		
+		function editarItem(){
+			//console.log(";)",this.id,$(this).attr('id'),$(this).html(),$(this).text());
+			//console.log(";)",$(this).attr('id'),$(this).html());	
+			let idItem = $(this).attr('id').split("E");					
+			//console.log(idItem[1]);
+			let title = $("#input_editar_titulo").val();			
+			let anio = $("#input_editar_año").val();
+			let actores = $("#input_editar_actores").val();
+			
+			editar(idItem[1], title, anio, actores);
+			
+			
+			
+		}		
+		
+		function editar(id_video, titulo, año, actores){
+			videosCargados.forEach(
+				function (videoCargado, indice){
+					
+					console.log(";)",videoCargado.id_video,id_video);
+					if(parseInt(videoCargado.id_video) == parseInt(id_video)){
+						console.log("----",titulo.length);
+						if(titulo.length > 0){												
+							videoCargado.titulo = titulo;
+						}
+						if(año.length > 0){
+							videoCargado.año = año;
+						}	
+						if(actores.length > 0){
+							videoCargado.actores = actores;
+						}						
+					}
+				} 
+			);
+			
+			$( "#list_items" ).empty();					
+			videosCargados.forEach(video => listarVideos(video));			
+		}
+		
+		$( "#btn_guardar_nuevo" ).on( "click", function() {
+	
+			buscarUltimoVideo();
+			$( "#list_items" ).empty();		
+			$("#input_titulo").val('');
+			$("#input_año").val('');			
+			$("#input_actores").val('');	
+
+			
+		});		
+
+		async function buscarUltimoVideo(){
+		
+			let title = $("#input_titulo").val();			
+			let anio = $("#input_año").val();
+			let actores = $("#input_actores").val();	
+			
+			let id_video = await ultimoVideoId();
+			++ id_video;
+			
+			let stringJson = JSON.parse('{ "titulo":"'+title+'", "año":"'+anio+'", "actores":"'+actores+'","id_video":'+id_video+'}');
+			videosCargados.push(stringJson);
+			
+		}
+		
+		function ultimoVideoId(){
+			let actual = 0;
+			let mayor = 0;
+			videosCargados.forEach(
+				function(video){
+					actual = video.id_video;
+					if(actual > mayor){
+						mayor = actual;
+					}
+				
+				}
+			);
+			return mayor;
+		
+		}
+		
+		function borrarItem(){
+			//console.log(";)",this.id,$(this).attr('id'),$(this).html(),$(this).text());
+			console.log(";)",$(this).attr('id'),$(this).html());	
+			let idItem = $(this).attr('id');					
+			borrar(idItem);
+		}	
+
+		function borrar(id_video){
+			videosCargados.forEach(
+				function (videoCargado, indice){
+					
+					console.log(";)",videoCargado.id_video,id_video);
+					if(parseInt(videoCargado.id_video) == parseInt(id_video)){
+						//console.log("eliminar ",videoCargado,indice);
+						videosCargados.splice(indice, 1);
+					}
+				} 
+			);
+			
+			$( "#list_items" ).empty();					
+			videosCargados.forEach(video => listarVideos(video));			
+		}		
+		
+		var arrayVideos = [];
+		var numeroVideosEncontrados = 0;
+		
+		$( "#btn_buscar" ).on( "click", function() {
+			
+			$( "#list_items" ).empty();
+			$( "#numero_videos_encontrados" ).empty();
+			numeroVideosEncontrados = 0;
+			
+			let palabraBuscar = $("#input_buscar").val();
+			buscarNombreVideo(palabraBuscar);
+						
+			console.log("FIN",arrayVideos);
+			
+			
+			
+		});		
+
+		function buscarNombreVideo(palabra){
+		
+			let tamPalabra = palabra.length;		
+
+			videosCargados.forEach(
+				function (videoJson){
+					console.log(palabra," tam",tamPalabra);
+					
+					if(tamPalabra > 0){
+						let nombreVideo = videoJson.titulo;
+						let indicePalabra = nombreVideo.indexOf(palabra);
+						console.log("indice ",indicePalabra," palabra ",palabra," nombreV: ",videoJson," tam ",tamPalabra);
+						if(indicePalabra != -1){
+							arrayVideos.push(videoJson);	
+							$( "#list_items" ).append( "<li class='lista'>"+videoJson.titulo+" : "+videoJson.año+" : "+videoJson.actores+" - "+videoJson.id_video+"</li>" );		
+							numeroVideosEncontrados = numeroVideosEncontrados +1;
+							$("#numero_videos_encontrados").text(" "+numeroVideosEncontrados);
+						}			
+					}				
+				}
+			);
+			$("#input_buscar").val('');
+
+		}	
+
+		$( "#btn_exportar" ).on( "click", function() {
+			$( "#contenedor" ).empty();	
+			asyncCall();
+		});					
+		
+		async function asyncCall() {
+			//const all = await db.video.toArray();
+			//console.log(typeof all,JSON.stringify(all));
+			var data = "text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(videosCargados));
+			$('<a href="data:' + data + '" download="IndexedDB.json">Descargar Archivo JSON</a>').appendTo('#contenedor');
+		}			
+		
+				
+	});
+							
+	
+		
+	
+	</script>
+	<style>
+		.botonBorrar {
+		  background-color: white;
+		  margin: 2px;
+		  border: 1px solid gray;
+		  font-size: .5rem;
+		  float: right;
+		}	
+		.lista {
+			list-style-type: square;
+		}
+		.lista:hover {
+			border: 1px solid green;
+		}		
+	</style>
+  </head>
+	<body>
+		<div class="container">
+		  <div class="row">
+			<div class="col-md-12">
+				<h4 style="text-align: center;">JsonDB</h4>
+			</div>
+
+		  </div>	
+
+		  <div class="row">
+			<div class="col-md-12">
+				<ul class="nav nav-tabs" id="myTab" role="tablist">
+				  <li class="nav-item" role="presentation">
+					<a class="nav-link active" id="home-tab" data-toggle="tab" href="#home" role="tab" aria-controls="home" aria-selected="true">Listar</a>
+				  </li>
+				  <li class="nav-item" role="presentation">
+					<a class="nav-link" id="profile-tab" data-toggle="tab" href="#profile" role="tab" aria-controls="profile" aria-selected="false">Nuevo</a>
+				  </li>
+				  <li class="nav-item" role="presentation">
+					<a class="nav-link" id="contact-tab" data-toggle="tab" href="#contact" role="tab" aria-controls="contact" aria-selected="false">Importar/Exportar</a>
+				  </li>
+				</ul>
+				<div class="tab-content" id="myTabContent">
+				  <div class="tab-pane fade show active" id="home" role="tabpanel" aria-labelledby="home-tab">
+					  <div class="row" style="margin-top:30px;">
+						<div class="col-md-2">
+							<div id="btn_listar" class="btn btn-primary">Listar</div>
+						</div>												
+						
+					  </div>
+					  
+					  <div class="row" style="margin-top:30px;">	
+
+						<div class="col-md-12">
+							<div class="input-group">
+								<input id="input_buscar" type="text" class="form-control" placeholder="Buscar video">
+								<div class="input-group-append">
+									<button class="btn btn-outline-secondary" type="button" id="btn_buscar">
+									Buscar <span style="margin-left:8px;border-color:gray;" id="numero_videos_encontrados" class="badge badge-secondary"></span></button>
+								</div>
+							</div>							
+						</div>							
+						
+					  </div>					  
+					  
+					  <div class="row" style="margin-top:30px;">											
+						<div class="col-md-12">
+							<div class="input-group">
+							  <div class="input-group-prepend">
+								<span class="input-group-text">Editar Video</span>
+							  </div>
+							  <input id="input_editar_titulo" type="text" aria-label="Título: " class="form-control" placeholder="título">
+							  <input id="input_editar_año" type="text" aria-label="Año: " class="form-control" placeholder="año">
+							  <input id="input_editar_actores" type="text" aria-label="Actores: " class="form-control" placeholder="actores">
+							</div>							
+						</div>													
+					  </div>					  
+					  
+					  
+					  <div class="row" style="margin-top:30px;">
+						<div class="col-md-8">
+							<div class="items">
+							  <ul id="list_items">
+								<!--<li id="100">Item1</li>-->
+							  </ul>
+							</div>						
+						</div>		
+					  </div>					  
+				  </div>
+				  <div class="tab-pane fade" id="profile" role="tabpanel" aria-labelledby="profile-tab">
+					  <div class="row" style="margin-top:30px;">
+						<div class="col-md-10">
+							<div class="input-group">
+							  <div class="input-group-prepend">
+								<span class="input-group-text">Nuevo Video</span>
+							  </div>
+							  <input id="input_titulo" type="text" aria-label="Título: " class="form-control" placeholder="título">
+							  <input id="input_año" type="text" aria-label="Año: " class="form-control" placeholder="año">
+							  <input id="input_actores" type="text" aria-label="Actores: " class="form-control" placeholder="Actores">
+							</div>				
+						</div>			
+						<div class="col-md-2">
+							<div id="btn_guardar_nuevo" class="btn btn-primary">Guardar</div>
+						</div>	
+					  </div>				  
+				  </div>
+				  <div class="tab-pane fade" id="contact" role="tabpanel" aria-labelledby="contact-tab">
+					  <div class="row" style="margin-top:30px;">
+					  
+						<div class="col-md-6">						
+							<div class="row">
+								<div class="col-md-12">
+									<div id="btn_importar" class="btn btn-primary">ImportarDB</div>						
+								</div>
+							</div>
+							<div class="row" style="margin-top:30px;">
+								<div class="col-md-12">
+									<input type="file" id="files" name="files[]" multiple />					
+								</div>
+							</div>			
+							<div class="row" style="margin-top:30px;">
+								<div class="col-md-12">
+									<output id="list"></output>						
+								</div>
+							</div>								
+	
+						</div>	
+
+
+				
+						
+						<div class="col-md-6">
+							<div class="row">
+								<div class="col-md-12">
+									<div id="btn_exportar" class="btn btn-primary">ExportarDB</div>								
+								</div>
+							</div>
+							<div class="row">
+								<div class="col-md-12">
+									<div id="contenedor"></div>								
+								</div>
+							</div>							
+							
+						</div>							
+						
+					  </div>	
+					  
+				  </div>
+				</div>				
+			</div>		
+		  </div>
+		  
+
+		  
+		  
+		</div>  
+	</body>
+  
+</html>
